@@ -31,7 +31,7 @@
     <!--scala语言的版本-->
     <scala.version>2.11.8</scala.version>
     <!--spark的版本-->
-    <spark.version>1.6.3</spark.version>
+    <spark.version>2.3.0</spark.version>
     <!--xml文件文件的框架-->
     <jackson.version>2.6.6</jackson.version>
     <!--hbase的版本-->

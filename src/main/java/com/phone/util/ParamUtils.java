@@ -33,7 +33,7 @@ public class ParamUtils {
      * @param jsonStr JSON对象   {task_id:101,task_name:"用户session日志分析",task_param:[20~28,程序员,xx]}
      * @return 参数
      */
-    public static String getParam(String jsonStr, String field) {
+    public static String getParam (String jsonStr, String field) {
         JSONObject jsonObject = JSON.parseObject(jsonStr);
         return jsonObject.getString(field);
     }

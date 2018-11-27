@@ -7,5 +7,7 @@ package com.phone.constant;
  * @Date: 2018/11/26 20:19
  */
 public enum DeployMode {
-    LOCAL,TEST,PRODUCTION
+    LOCAL,
+    TEST,
+    PRODUCTION
 }
