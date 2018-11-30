@@ -24,9 +24,10 @@ public class ResourcesUtils {
     static {
         properties = new Properties();
         try {
+            //properties读取 resources(资源)/conf.properties文件中的"Spark作业的运行模式"
             properties.load(ResourcesUtils.class.getClassLoader().getResourceAsStream("conf.properties"));
 
-            //动态设置部署模式
+            //动态设置部署模式,DeployMode枚举
             dMode = DeployMode.valueOf(getPropertyValueByKey(Constants.SPARK_JOB_DEPLOY_MODE).toUpperCase());
         } catch (IOException e) {
             e.printStackTrace();

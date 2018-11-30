@@ -19,7 +19,7 @@ public class DBCPUtil {
     static {
         try {
             InputStream in = null;
-            Properties properties = new Properties();
+            Properties properties = new Properties();//用来读取xxx.properties文件配置
             /**
              * 根据conf.properties中的配置信息来判断是执行本地/测试还是生产环境
              */
@@ -30,9 +30,10 @@ public class DBCPUtil {
              */
             //备注：File.separator目录的分隔符，系统不一样分隔符就不一样
             String filePath = runMode.toString().toLowerCase() + File.separator + ResourcesUtils.getPropertyValueByKey(Constants.DBCP_COFIG_FILE);
-            System.out.println("filePath = " + filePath);
+//            System.out.println("filePath = " + filePath);
 
             in = DBCPUtil.class.getClassLoader().getResourceAsStream(filePath);
+            //properties加载文件路径
             properties.load(in);
 
             //连接池的实例

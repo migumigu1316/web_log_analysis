@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS log_statics;
+CREATE DATABASE IF NOT EXISTS log_analysis;
 
-USE log_statics;
+USE log_analysis;
 -- session_aggr_stat表，存储第一个功能，session聚合统计的结果
 CREATE TABLE IF NOT EXISTS  `session_aggr_stat` (
   `task_id` int(11) NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE `session_detail` (
   `order_product_ids` varchar(255) DEFAULT NULL,
   `pay_category_ids` varchar(255) DEFAULT NULL,
   `pay_product_ids` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`task_id`,`user_id`,`session_id`)
+  PRIMARY KEY (`task_id`,`user_id`,`session_id`,`page_id`,`action_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 

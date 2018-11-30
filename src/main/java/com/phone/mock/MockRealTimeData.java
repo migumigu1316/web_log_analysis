@@ -25,13 +25,14 @@ public class MockRealTimeData extends Thread {
 
     private Producer<Integer, String> producer;
 
+    //模拟现实时间的数据
     public MockRealTimeData() {
         provinceCityMap.put("河北", new String[]{"石家庄", "唐山", "秦皇岛", "邯郸", "邢台", "保定", "张家口", "承德", "沧州", "廊坊", "衡水"});
         provinceCityMap.put("辽宁", new String[]{"沈阳", "大连", "鞍山", "抚顺", "本溪", "丹东", "锦州", "营口", "阜新", "辽阳", "盘锦", "铁岭", "朝阳", "葫芦岛"});
         provinceCityMap.put("江苏", new String[]{"南京", "无锡", "徐州", "常州", "苏州", "南通", "连云港", "淮安", "盐城", "扬州", "镇江", "泰州", "宿迁"});
         provinceCityMap.put("浙江", new String[]{"杭州", "宁波", "温州", "嘉兴", "湖州", "绍兴", "金华", "衢州", "舟山", "台州", "丽水"});
         provinceCityMap.put("山东", new String[]{"济南", "青岛", "淄博", "枣庄", "东营", "烟台", "潍坊", "威海", "济宁", "泰安", "日照", "莱芜", "临沂", "德州"});
-        Properties properties = new Properties();
+        Properties properties = new Properties();//Properties属性
         try {
             properties.load(MockRealTimeData.class.getClassLoader().getResourceAsStream("kafka/producer.properties"));
         } catch (IOException e) {
@@ -47,7 +48,7 @@ public class MockRealTimeData extends Thread {
             String province = provinces[random.nextInt(provinces.length)];
             String[] cities = provinceCityMap.get(province);
             String city = cities[random.nextInt(cities.length)];
-           //log：消息的组成，系统当前时间 省份 城市 用户id 广告id
+            //log：消息的组成，系统当前时间 省份 城市 用户id 广告id
             String log = System.currentTimeMillis() + " " + province + " " + city + " "
                     + random.nextInt(100) + " " + random.nextInt(10);
             producer.send(new ProducerRecord<Integer, String>("ad_real_time_log", log));

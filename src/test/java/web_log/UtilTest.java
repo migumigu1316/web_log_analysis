@@ -3,6 +3,7 @@ package web_log;
 import com.phone.constant.Constants;
 import com.phone.util.DBCPUtil;
 import com.phone.util.ResourcesUtils;
+import com.phone.util.StringUtils;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -26,5 +27,16 @@ public class UtilTest {
     public void testDBCPUtil(){//测试时保证数据库打开状态
         Connection conn = DBCPUtil.getConnection();
         System.out.println(conn);
+    }
+
+    @Test
+    public void testStringUtil(){
+        String v1 = "session_count=0|1s_3s=2|4s_6s...|60=0";
+        String v2 = "session_count";
+        String value = StringUtils.getFieldFromConcatString(v1,"\\|",v2);
+        System.out.println(value);
+
+        StringUtils.setFieldInConcatString(v1,"\\|",v2,String.valueOf(5));
+        System.out.println(v1);
     }
 }
