@@ -6,14 +6,14 @@ import java.util
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.serializer.SerializerFeature
 import com.phone.bean.common.{Task, TaskParam}
-import com.phone.bean.session.{SessionAggrStat, SessionDetail, SessionRandomExtract}
+import com.phone.bean.session._
 import com.phone.constant.Constants
 import com.phone.dao.common.ITaskDao
 import com.phone.dao.common.impl.TaskDaoImpl
-import com.phone.dao.session.impl.{SessionAggrStatImpl, SessionDetailImpl, SessionRandomExtractImpl}
-import com.phone.dao.session.{ISessionAggrStat, ISessionDetail, ISessionRandomExtract}
+import com.phone.dao.session.impl._
+import com.phone.dao.session._
 import com.phone.jobs.session.accumulator.SessionAggrStatAccumulator
-import com.phone.jobs.session.job.UserSessionAnalysisJob.{aggrResultToDB, extractSessionByRate, randomSessionToDetail}
+import com.phone.jobs.session.bean.CategoryBean
 import com.phone.mock.MockData
 import com.phone.util.{ResourcesUtils, StringUtils}
 import org.apache.spark.broadcast.Broadcast
@@ -30,13 +30,13 @@ import scala.collection.mutable.ArrayBuffer
   * @Author: xqg
   * @Date: 2018/11/27 10:12
   *
-  *        ~~~> 模块1：用户访问session分析
-  *        步骤： （注意：模块下分多个功能）
-  *        ①按条件筛选session
-  *        ②统计出符合条件的session中，访问时长在1s~3s、4s~6s、7s~9s、10s~30s、30s~60s、1m~3m、3m~10m、10m~30m、30m以上各个范围内的session占比；访问步长在1~3、4~6、7~9、10~30、30~60、60以上各个范围内的session占比
-  *        ③在符合条件的session中，按照时间比例随机抽取1000个session (等比例抽样，注意：总session数>1000，需要抽样；若<1000,以实际session数为准)
-  *        ④在符合条件的session中，获取点击、下单和支付数量排名前10的品类
-  *        ⑤对于排名前10的品类，分别获取其点击次数排名前10的session
+  * ~~~> 模块1：用户访问session分析
+  * 步骤： （注意：模块下分多个功能）
+  * ①按条件筛选session
+  * ②统计出符合条件的session中，访问时长在1s~3s、4s~6s、7s~9s、10s~30s、30s~60s、1m~3m、3m~10m、10m~30m、30m以上各个范围内的session占比；访问步长在1~3、4~6、7~9、10~30、30~60、60以上各个范围内的session占比
+  * ③在符合条件的session中，按照时间比例随机抽取1000个session (等比例抽样，注意：总session数>1000，需要抽样；若<1000,以实际session数为准)
+  * ④在符合条件的session中，获取点击、下单和支付数量排名前10的品类
+  * ⑤对于排名前10的品类，分别获取其点击次数排名前10的session
   */
 object UserSessionAnalysisJob {
 
@@ -55,7 +55,7 @@ object UserSessionAnalysisJob {
       * 10m~30m、30m以上各个范围内的session占比；访问步长在1~3、4~6、7~9、10~30、30~60、60以上各个
       * 范围内的session占比
       */
-//    getStepLenAndTimeLenRate(spark, args)
+    getStepLenAndTimeLenRate(spark, args)
 
     /**
       * 3、在符合条件的session中，按照时间比例随机抽取1000个session
@@ -65,14 +65,111 @@ object UserSessionAnalysisJob {
     /**
       * 4、在符合条件的session中，获取点击、下单和支付数量排名前10的品类
       */
-
+    val categoryIdContainer: ArrayBuffer[Long] = calClickOrderPayTop10(spark, args)
 
     /**
       * 5、对于排名前10的品类，分别获取其点击次数排名前10的session
       */
+    calTop10ClickCntSession(categoryIdContainer, spark, args)
+
+    /**
+      * 释放资源
+      */
+    spark.stop()
   }
 
   //---------------------------------☆☆☆方法☆☆☆---------------------------------------
+  /**
+    * 5.对于排名前10的品类，分别获取其点击次数排名前10的session
+    *
+    * @param categoryIdContainer
+    * @param spark
+    * @param args
+    */
+  def calTop10ClickCntSession(categoryIdContainer: ArrayBuffer[Long], spark: SparkSession, args: Array[String]) = {
+    val dao: ITop10CategorySession = new Top10CategorySessionImpl
+
+    for (category_id <- categoryIdContainer) {
+      val df3: DataFrame = spark.sql(s"select  session_id, count(*) cnt   from filter_after_action where click_category_id= $category_id group by session_id")
+
+      //创建临时表
+      df3.createOrReplaceTempView("temp_click_session")
+
+      val df4: DataFrame = spark.sql("select  * from temp_click_session order by cnt desc")
+
+      df4.take(10).foreach(row => {
+        //取出数据
+        val session_id = row.getAs[String]("session_id")
+        val click_count = row.getAs[Long]("cnt")
+        //放到实体类中
+        val bean = new Top10CategorySession(args(0).toInt, category_id.toInt, session_id, click_count.toInt)
+        //保存到DB中
+        dao.saveBeanToDB(bean)
+      })
+    }
+  }
+
+  /**
+    * 4.计算点击下单支付的Top10
+    *
+    * @param spark
+    * @param args
+    * @return
+    */
+  def calClickOrderPayTop10(spark: SparkSession, args: Array[String]) = {
+    //前提：
+    // 1.准备一个容器
+    val container: ArrayBuffer[CategoryBean] = new ArrayBuffer
+
+    //2， 准备一个容器，存放点击、下单和支付数量排名前10的品类的id值，供下一步使用
+    val categoryIdContainer: ArrayBuffer[Long] = new ArrayBuffer
+
+    //TODO ①设计一个实体类 CategoryBean , 需要实现Ordered 特质(类似于Java中的Comparable)
+    //②求出所有品类总的点击次数
+    val arr: Array[Row] = spark.sql("select click_category_id, count(*)  total_click_cnt from filter_after_action where click_category_id is not null  group by click_category_id ").rdd.collect
+
+    val rdd: RDD[Row] = spark.sql("select * from filter_after_action").rdd.cache()
+
+    //③根据不同品类总的点击次数：
+    for (row <- arr) {
+      //点击的品类id
+      val click_category_id = row.getAs[Long]("click_category_id").toString
+
+      //总的点击次数
+      val total_click_cnt = row.getAs[Long]("total_click_cnt")
+
+      //求该品类总的下单次数
+      val total_order_cnt = rdd.filter(row => click_category_id.equals(row.getAs[String]("order_category_ids"))).count()
+
+      //求该品类总的支付次数
+      val total_pay_cnt = rdd.filter(row => click_category_id.equals(row.getAs[String]("pay_category_ids"))).count()
+
+      //封装成~> CategoryBean的实例，且添加到容器中存储起来
+      val bean = new CategoryBean(click_category_id.toLong, total_click_cnt, total_order_cnt, total_pay_cnt)
+
+      // 将实例添加到容器中
+      container.append(bean)
+    }
+
+    //④将容器转换成RDD,使用spark中的二次排序算子求topN ~>注意点： RDD中每个元素的类型是对偶元组 （对偶元组：将元组中只有两个元素的元组。）
+    val arrs: Array[(CategoryBean, String)] = spark.sparkContext.parallelize(container).map(perEle => (perEle, "")).sortByKey().take(10)
+
+
+    val dao: ITop10Category = new Top10CategoryImpl
+
+    for (tuple <- arrs) {
+      val tmpBean: CategoryBean = tuple._1
+      val bean: Top10Category = new Top10Category(args(0).toInt, tmpBean.getClick_category_id.toInt, tmpBean.getTotal_click_cnt.toInt, tmpBean.getTotal_order_cnt.toInt, tmpBean.getTotal_pay_cnt.toInt)
+
+      //dao层
+      dao.saveBeanToDB(bean)
+
+      //向容器中存入top10品类的id
+      categoryIdContainer.append(tmpBean.getClick_category_id)
+    }
+    //返回出来的值,
+    categoryIdContainer
+  }
 
 
   /**
@@ -267,7 +364,7 @@ object UserSessionAnalysisJob {
     */
   private def getStepLenAndTimeLenRate(spark: SparkSession, args: Array[String]) = {
     //select count(*) stepLen, 自定义函数(结束时间，开始时间) timeLen from filter_after_action group by session_id;
-    //TODO 注册自定义函数
+    //TODO ☆☆☆注册自定义函数(需要多理解)☆☆☆
     spark.udf.register("getTimeLen", (endTime: String, startTime: String) => getTimeLen(endTime, startTime))
     //求出各个session的步长和时长，根据session_id进行分组
     //    spark.sql("select count(*) stepLen,getTimeLen(max(action_time),min(action_time)) " +
@@ -414,7 +511,7 @@ object UserSessionAnalysisJob {
     val taskParamJsonStr = task.getTask_param();
 
     //    println(taskParamJsonStr)
-    //TODO 使用FastJson,将json对象格式的数据封装到实体类TaskParam中
+    //TODO 使用FastJson,将json对象格式的数据封装到实体类TaskParam中（TaskParam实体类,对筛选参数进行封装）
     val taskParam: TaskParam = JSON.parseObject[TaskParam](taskParamJsonStr, classOf[TaskParam])
     //    println(taskParam)
 
