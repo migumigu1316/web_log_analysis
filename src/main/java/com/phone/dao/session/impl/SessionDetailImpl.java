@@ -21,7 +21,7 @@ public class SessionDetailImpl implements ISessionDetail {
         String sql = "insert into session_detail values(?,?,?,?,?,?,?,?,?,?,?,?)";
 
         try {
-            qr.update(sql,new Object[]{
+            qr.update(sql, new Object[]{
                     bean.getTask_id(),
                     bean.getUser_id(),
                     bean.getSession_id(),

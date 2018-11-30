@@ -18,8 +18,9 @@ public class SessionAggrStatImpl implements ISessionAggrStat {
 
     @Override
     public void saveBeanToDB(SessionAggrStat bean) {
+        String sql = "insert into session_aggr_stat values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try {
-            qr.update("insert into session_aggr_stat values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            qr.update(sql,
                     bean.getTask_id(),
                     bean.getSession_count(),
                     bean.getPeriod_1s_3s(),

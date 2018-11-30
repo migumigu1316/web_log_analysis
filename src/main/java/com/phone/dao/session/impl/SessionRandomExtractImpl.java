@@ -19,7 +19,7 @@ public class SessionRandomExtractImpl implements ISessionRandomExtract {
     private QueryRunner qr = new QueryRunner(DBCPUtil.getDataSource());
 
     @Override
-    public void saveBeansToDB(List<SessionRandomExtract> beans) {
+    public void saveBeansToDB(List<SessionRandomExtract> beans) {//用list存储实体类的数据
         String sql = "insert into session_random_extract values(?,?,?,?,?)";
 
         //TODO 为什么这样写???
@@ -32,7 +32,8 @@ public class SessionRandomExtractImpl implements ISessionRandomExtract {
         }
 
         try {
-            qr.batch(sql, params);
+            //批次存储到DB中
+            qr.batch(sql, params);//把params中的数据存储到table中
         } catch (SQLException e) {
             e.printStackTrace();
         }
