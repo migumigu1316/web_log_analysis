@@ -93,11 +93,13 @@ public class StringUtils {
 	 */
 	public static String setFieldInConcatString(String str, 
 			String delimiter, String field, String newFieldValue) {
+		//字符串str用"delimiter(分隔符)"切割
 		String[] fields = str.split(delimiter);
 		
 		for(int i = 0; i < fields.length; i++) {
 			String fieldName = fields[i].split("=")[0];
 			if(fieldName.equals(field)) {
+			    //拼接字符串
 				String concatField = fieldName + "=" + newFieldValue;
 				fields[i] = concatField;
 				break;

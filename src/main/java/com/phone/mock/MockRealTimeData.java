@@ -51,6 +51,7 @@ public class MockRealTimeData extends Thread {
             //log：消息的组成，系统当前时间 省份 城市 用户id 广告id
             String log = System.currentTimeMillis() + " " + province + " " + city + " "
                     + random.nextInt(100) + " " + random.nextInt(10);
+            //生产者，主题指定
             producer.send(new ProducerRecord<Integer, String>("ad_real_time_log", log));
 
             try {
