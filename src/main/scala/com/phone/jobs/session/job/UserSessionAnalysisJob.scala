@@ -273,7 +273,7 @@ object UserSessionAnalysisJob {
     */
   private def aggrResultToDB(spark: SparkSession, bcTaskId: Broadcast[Int], bcContainer: Broadcast[ArrayBuffer[String]]) = {
     //从临时表temp_random中选出最后结果保存到DB中
-    //将结果落地到mysql相应的表中，需要通过一个容器将sesssion_id存储一份,将上述的结果映射为一张临时表，进行聚合操作
+    //将结果落地到mysql相应的表中，需要通过一个容器将session_id存储一份,将上述的结果映射为一张临时表，进行聚合操作
     //TODO  concat_ws,第一个参数是其它参数的分隔符。分隔符的位置放在要连接的两个字符串之间。和 collect_set()（对某列进行去重）
     //concat_ws,collect_set,搞明白sql语句中用到的函数
     val nowPeriodAllSessionRDD: RDD[Row] = spark.sql(" select  session_id,concat_ws(',', collect_set(distinct search_keyword)) search_keywords ,min(action_time) start_time,max(action_time) end_time from temp_random group by session_id").rdd
@@ -508,7 +508,7 @@ object UserSessionAnalysisJob {
     //    Task(task_id=1, task_name=用户访问session分析, create_time=null, start_time=null, finish_time=null, task_type=用户访问session分析任务, task_status=null, task_param={"ages":[0,100],"genders":["男","女"],"professionals":["教师", "工人", "记者", "演员", "厨师", "医生", "护士", "司机", "军人", "律师"],"cities":["南京", "无锡", "徐州", "常州", "苏州", "南通", "连云港", "淮安", "盐城", "扬州"]})
 
     //获取 task_param里面的值,做一个集合类专门用来存储
-    val taskParamJsonStr = task.getTask_param();
+    val taskParamJsonStr = task.getTask_param()
 
     //    println(taskParamJsonStr)
     //TODO 使用FastJson,将json对象格式的数据封装到实体类TaskParam中（TaskParam实体类,对筛选参数进行封装）

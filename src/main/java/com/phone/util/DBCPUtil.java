@@ -5,13 +5,11 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
-
 import javax.sql.DataSource;
 
 import com.phone.constant.Constants;
 import com.phone.constant.DeployMode;
 import org.apache.commons.dbcp.BasicDataSourceFactory;
-
 
 public class DBCPUtil {
     private static DataSource ds;
@@ -19,7 +17,8 @@ public class DBCPUtil {
     static {
         try {
             InputStream in = null;
-            Properties properties = new Properties();//用来读取xxx.properties文件配置
+            //用来读取xxx.properties文件配置
+            Properties properties = new Properties();
             /**
              * 根据conf.properties中的配置信息来判断是执行本地/测试还是生产环境
              */
@@ -28,7 +27,7 @@ public class DBCPUtil {
             /**
              * 动态的获取文件的目录
              */
-            //备注：File.separator目录的分隔符，系统不一样分隔符就不一样
+            //备注：File.separator是目录的分隔符，系统不一样分隔符就不一样
             String filePath = runMode.toString().toLowerCase() + File.separator + ResourcesUtils.getPropertyValueByKey(Constants.DBCP_COFIG_FILE);
 //            System.out.println("filePath = " + filePath);
 

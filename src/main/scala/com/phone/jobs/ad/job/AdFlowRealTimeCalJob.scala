@@ -72,13 +72,17 @@ object AdFlowRealTimeCalJob {
   def calSlideWindow(whiteList: DStream[String]) = {
     //reduceByKeyAndWindow((v1: Long, v2: Long) => v1 + v2, Minutes(60), Minutes(1))
     //（1543635439749#河北#秦皇岛#36#2）
-    whiteList.map(tuple => {
+    val windowed: DStream[(String, Long)] = whiteList.map(tuple => {
       val arr = tuple.toString.split("#")
       val time = DateUtils.formatTimeMinute(new Date(arr(0).trim.toLong))
       val adId = arr(4).trim
       (time + "#" + adId, 1L)
-    }).reduceByKeyAndWindow((v1: Long, v2: Long) => v1 + v2, Seconds(4),Seconds(2))
-      .foreachRDD(rdd => {
+    })
+
+    //窗口操作reduceByKeyAndWindow
+    val win: DStream[(String, Long)] = windowed.reduceByKeyAndWindow((v1: Long, v2: Long) => v1 + v2, Seconds(4), Seconds(2))
+
+    win.foreachRDD(rdd => {
         if (!rdd.isEmpty()) rdd.foreachPartition(itr => {
           val dao: IAdClickTrendDao = new AdClickTrendDaoImpl
           val beans: util.List[AdClickTrend] = new util.LinkedList[AdClickTrend]
@@ -98,7 +102,6 @@ object AdFlowRealTimeCalJob {
 
             dao.updateBatch(beans)
           }
-
         })
       })
   }
@@ -184,7 +187,7 @@ object AdFlowRealTimeCalJob {
       (day + "#" + arr(1).trim + "#" + arr(2).trim + "#" + arr(4).trim, 1L)
     })
 
-    //updateStateByKey批次跟新
+    //TODO updateStateByKey批次跟新
     val ds: DStream[(String, Long)] = wl.updateStateByKey((nowBatch: Seq[Long], historyAllBatch: Option[Long]) => {
       val nowSum: Long = nowBatch.sum
       val historySum: Long = historyAllBatch.getOrElse(0)
@@ -277,7 +280,7 @@ object AdFlowRealTimeCalJob {
     * @param perDayDS
     */
   def filterBlackListToDB(perDayDS: DStream[(String, Long)]) = {
-    //  基于上一步的结果进行筛选，并将结果保存到db中 （存在则不用处理，不存在就save）
+    //  基于上一步的结果进行筛选，并将结果保存到db中 (存在则不用处理，不存在就save(保存))
     //  DStream[(每天#用户id#广告id,总次数)]实例.filter(每个元素=>每个元素._2>100).foreachRDD(XXX)
     //在正式提交时，需要将2~>100
     perDayDS.filter(perEle => perEle._2 > 2).foreachRDD(rdd => {
@@ -288,7 +291,7 @@ object AdFlowRealTimeCalJob {
 
         if (!itr.isEmpty) {
           itr.foreach(tuple => {
-            val userId = tuple._1.split("#")(1).trim.toInt
+            val userId = tuple._1.split("#")(1).trim.toInt//切割取出第一个字段（userId）
             val bean = new AdBlackList(userId)
             beans.add(bean)
           })
@@ -351,7 +354,6 @@ object AdFlowRealTimeCalJob {
     //③返回结果
     perDayDS
   }
-
 
   /**
     * 前期准备

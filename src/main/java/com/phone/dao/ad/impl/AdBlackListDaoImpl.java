@@ -24,6 +24,9 @@ public class AdBlackListDaoImpl implements IAdBlackListDao {
         try {
             String sql = "select user_id from ad_blacklist ";
             //获得表中旧的黑名单信息
+            //ScalarHandler:用于统计表记录的条数
+            //BeanHandler:用来将表中每条记录封装到一个实例中
+            //BeanListHandler: 用来将表中所有记录封装到一个集合中，集合中每个元素即为：每条记录所封装的实体类对象
             List<AdBlackList> oldBlackList = qr.query(sql, new BeanListHandler<AdBlackList>(AdBlackList.class));
             return oldBlackList;
         } catch (SQLException e) {

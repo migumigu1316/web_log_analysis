@@ -18,7 +18,7 @@ public class AdClickTrend {
     private int ad_id;
 
     /**
-     * 分钟（20180328 14:50）
+     * 分钟（格式：20180328 14:50）
      */
     private String minute;
 

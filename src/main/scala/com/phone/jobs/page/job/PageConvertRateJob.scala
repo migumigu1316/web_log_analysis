@@ -59,7 +59,7 @@ object PageConvertRateJob {
   }
 
   /**
-    * 求页面单条转化率
+    * 2.求页面单条转化率
     *
     * @param spark
     * @param args
@@ -167,7 +167,7 @@ object PageConvertRateJob {
   }
 
   /**
-    * 按条件筛选session
+    * 1.按条件筛选session
     *
     * @param spark
     * @param args

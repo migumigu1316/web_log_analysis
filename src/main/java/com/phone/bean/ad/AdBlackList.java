@@ -23,7 +23,6 @@ public class AdBlackList implements Serializable {
         this.user_id = user_id;
     }
 
-
     public AdBlackList() {
     }
 
